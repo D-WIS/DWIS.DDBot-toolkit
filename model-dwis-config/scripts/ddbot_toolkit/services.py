@@ -44,7 +44,11 @@ class DDBotToolkit:
         hard_errors = [message for message in diagnostics.messages if message.startswith("[error]")]
         soft_comments = [
             *[message for message in diagnostics.messages if message.startswith("[warning]")],
-            *reasoning.warnings,
+            *[
+                message
+                for diagnostic in reasoning.diagnostics
+                for message in diagnostic.messages
+            ],
         ]
         report.update(
             {
@@ -59,7 +63,14 @@ class DDBotToolkit:
                 "graph": {
                     "asserted_triples": len(construction.graph),
                     "inferred_triples": len(inferred),
-                    "growth_ratio": reasoning.inferred_size_ratio,
+                    "growth_ratio": next(
+                        (
+                            diagnostic.details["graph_growth_ratio"]
+                            for diagnostic in reasoning.diagnostics
+                            if diagnostic.diagnostic_name == "reasoning_growth"
+                        ),
+                        1.0,
+                    ),
                 },
             }
         )

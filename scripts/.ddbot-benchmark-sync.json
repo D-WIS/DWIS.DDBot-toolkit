@@ -1,0 +1,8 @@
+{
+  "repo": "git@github.com:zl6977/ddbot-benchmark.git",
+  "sha": "53190c82e115cf96d4d2083fb197da932979d60f",
+  "synced_at": "2026-09-30T08:31:13.953956+00:00",
+  "mirror_dirs": {
+    "src/dwis_validation": "model-dwis-config/scripts/ddbot_toolkit/validation"
+  }
+}

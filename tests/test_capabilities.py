@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from ddbot_toolkit import DDBotToolkit, ExampleRetriever, OntologySearch
 from ddbot_toolkit.paths import example_corpus_path
 
@@ -34,7 +36,7 @@ SetPoint:f_bos_sp_01
 WOB:f_bos_sp_01
 ContinuousDataType:f_bos_sp_01
 f_bos_sp_01 HasDynamicValue f_bos_sp
-f_bos_sp_01 IsOfMeasurableQuantity ForceDrilling
+f_bos_sp_01 IsOfMeasurableQuantity ForceDrillingQuantity
 BottomOfStringReferenceLocation:bos_01
 f_bos_sp_01 IsPhysicallyLocatedAt bos_01
 """
@@ -48,3 +50,25 @@ def test_validation_returns_repair_guidance() -> None:
     assert report["valid"] is False
     assert report["hard_errors"]
     assert report["repair_suggestions"]
+
+
+@pytest.mark.parametrize("warning_ratio", [0.0, float("inf")])
+def test_validation_reads_reasoning_diagnostics(warning_ratio: float) -> None:
+    toolkit = DDBotToolkit()
+    reasoner = toolkit._validation.rdf_reasoner
+    reasoner.size_warning_ratio = warning_ratio
+    reasoner.size_warning_floor = 0
+
+    report = toolkit.validate("DynamicDrillingSignal:pressure")
+
+    assert report["valid"] is True, report
+    graph = report["graph"]
+    assert graph["asserted_triples"] > 0
+    assert graph["growth_ratio"] == round(
+        graph["inferred_triples"] / graph["asserted_triples"], 3
+    )
+    growth_warnings = [
+        message for message in report["soft_comments"]
+        if "Inferred graph is" in message
+    ]
+    assert bool(growth_warnings) == (warning_ratio == 0.0)

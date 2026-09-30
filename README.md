@@ -90,3 +90,23 @@ its loader-derived bundled paths explicitly and rejects out-of-bound resources.
 
 See the [architecture](docs/architecture.md), [tool contract](docs/tool-contract.md), and
 [installation guide](docs/installation.md) for repository maintenance details.
+
+## Sync upstream validation
+
+The bundled `model-dwis-config/scripts/ddbot_toolkit/validation/` directory mirrors
+`src/dwis_validation/` from [ddbot-benchmark](https://github.com/zl6977/ddbot-benchmark).
+Make validation changes upstream, then sync them here:
+
+```bash
+bash scripts/sync_ddbot_benchmark.sh          # latest upstream master
+bash scripts/sync_ddbot_benchmark.sh <sha>    # specific upstream commit
+bash scripts/sync_ddbot_benchmark.sh --check  # compare with the recorded snapshot
+uv run pytest
+```
+
+The script records the commit and path mapping in `scripts/.ddbot-benchmark-sync.json`.
+It caches upstream Git objects under `.cache/`; `--check` works offline once the recorded commit
+is cached. `DDBOT_BENCHMARK_URL` can override the upstream URL, including with a local checkout.
+Only validation code is mirrored; ontology, examples, and upstream benchmark tests are excluded.
+Review result-model changes against the toolkit's own `services.py` adapter and run its tests
+after every sync.

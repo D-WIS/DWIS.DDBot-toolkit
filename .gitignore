@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .venv/
+.cache/
 build/
 dist/
 coverage.xml
@@ -11,4 +12,3 @@ coverage.xml
 
 # Source material is intentionally not part of the product surface.
 tmp/
-
