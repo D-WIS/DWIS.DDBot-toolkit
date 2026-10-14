@@ -1,5 +1,8 @@
 # Architecture
 
+This document describes the implementation of the `model-dwis-config` Skill for contributors.
+For installation and use, see the [README](../README.md).
+
 ## Dependency direction
 
 ```text
@@ -21,6 +24,11 @@ host coding agent
 The bundled Python modules implement ontology search, example retrieval, and validation. The CLI
 is their stable executable boundary; the Skill instructions own the conversational workflow and do
 not duplicate that implementation.
+
+The default interactive workflow clarifies inputs and confirms the intent sketch with the user.
+When non-interactive, one-shot, or batch processing is explicitly requested, the agent extracts
+the intent from the supplied description, records necessary assumptions, and proceeds without
+confirmation. Both modes validate and repair the CONFIG before delivery.
 
 ## Interface priority
 

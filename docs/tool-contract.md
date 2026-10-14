@@ -31,5 +31,9 @@ message text.
 - `validate [CONFIG]` validates a file, or stdin when `CONFIG` is omitted.
 
 The global `--ontology PATH` option selects a different Turtle ontology for `ontology` and
-`validate`. The environment variables documented in the repository README provide persistent
-resource overrides.
+`validate`. For direct CLI use, `DDBOT_ONTOLOGY_PATH` selects the default ontology and
+`DDBOT_EXAMPLE_CORPUS_PATH` selects the default example corpus. Explicit command-line options
+take precedence over these environment variables.
+
+During Skill execution, the agent passes the bundled resource paths explicitly, following
+`SKILL.md` and its [runtime guide](../model-dwis-config/references/environment.md).
