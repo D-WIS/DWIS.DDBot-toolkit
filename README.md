@@ -1,7 +1,7 @@
 # DDBot Toolkit
 
 This repository is for developing and testing **`model-dwis-config`**, an Agent Skill for
-generating, modifying, validating, and repairing DWIS CONFIG files from drilling-signal
+generating, modifying, validating, and repairing DWIS config files from drilling-signal
 descriptions.
 
 The complete, installable Skill lives in [`model-dwis-config/`](model-dwis-config/). It bundles
@@ -9,7 +9,7 @@ the agent instructions, Python tools, DWIS ontology, and modelling examples.
 
 ## Prerequisites
 
-- An installed agent CLI that supports Agent Skills and the `/skills` command.
+- An installed agent CLI that supports Agent Skills, such as Claude Code or GitHub Copilot CLI.
 - `uv` installed and available on `PATH` in the environment where your agent runs. [LINK](https://docs.astral.sh/uv/getting-started/installation/)
 
 The Skill uses Python 3.11 or newer. `uv` can download a compatible Python version and install
@@ -17,7 +17,12 @@ the script's dependencies on first run, which may require network access.
 
 ## Install the Skill in your project
 
+**Option 1:**
+
 Copy the entire `model-dwis-config/` directory into your project's `.agents/skills/` directory:
+
+> [!TIP]
+> For Claude Code, use `.claude/skills/` instead of `.agents/skills/` in the examples below.
 
 ```text
 your-project/
@@ -40,17 +45,46 @@ cp -R model-dwis-config /path/to/your-project/.agents/skills/
 Only `model-dwis-config/` is needed. You do not need to copy the rest of this repository or
 install its development environment.
 
+**Option 2:**
+
+Use `npx skills` to install:
+
+```bash
+npx skills add https://github.com/D-WIS/DWIS.DDBot-toolkit/tree/develop
+```
+
 ## Use the Skill
 
-Open the target project in your agent, enter `/skills`, and select `model-dwis-config`.
-Then describe your task. For example:
+### 1. Load the Skill
 
-> Generate a DWIS CONFIG for measured standpipe pressure.
+Start your agent in the target project and invoke the installed Skill:
+
+- **[OMP](https://github.com/can1357/oh-my-pi/blob/main/docs/skills.md):** enter
+  `/skill:model-dwis-config` followed by your task (requires `skills.enableSkillCommands`);
+  alternatively, ask the agent to use the `model-dwis-config` skill.
+- **[Codex CLI](https://developers.openai.com/codex/skills/):** enter `/skills` and select
+  `model-dwis-config`, or include `$model-dwis-config` in your prompt.
+- **[Claude Code](https://code.claude.com/docs/en/skills):** enter `/model-dwis-config`
+  followed by your task.
+- **[GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills):**
+  enter `/skills list` to check discovery, then include `/model-dwis-config` in your prompt.
+  Run `/skills reload` first if you installed the Skill during the current session.
+
+After loading the Skill, the agent automatically sets up and checks the runtime environment.
+Once setup is complete, you can start modelling.
+
+### 2. Start Modelling
+
+Describe the drilling signal you want to model, or provide an existing config to validate
+and repair. You can include the task with the invocation above or send it as your next message.
+For example:
+
+> Generate a DWIS config for measured standpipe pressure.
 
 > Validate signals.dwis and repair any errors.
 
 The Skill guides the agent through clarifying the signal description, confirming the intended
-model, generating a CONFIG, and validating and repairing it before delivery. It also supports
+model, generating a config, and validating and repairing it before delivery. It also supports
 explicitly requested non-interactive, one-shot, and batch processing.
 
 Ontology search, example retrieval, and validation run locally after setup. See the
