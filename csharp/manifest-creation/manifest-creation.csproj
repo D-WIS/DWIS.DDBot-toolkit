@@ -8,4 +8,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="DWIS.API.DTO" Version="2.2.32" />
+    <PackageReference Include="DWIS.Vocabulary.Standard" Version="1.0.172" />
+    <PackageReference Include="DWIS.Vocabulary.Utils" Version="1.0.172" />
+  </ItemGroup>
+
 </Project>

@@ -4,6 +4,8 @@
 //
 // When no output file is given, the output path is the input path with a .json extension.
 
+using DWIS.API.DTO;
+
 if (!CommandLineOptions.TryParse(args, out var options, out var error))
 {
     if (error is not null)
@@ -19,6 +21,47 @@ Console.WriteLine($"Input file : {options.InputFile}");
 Console.WriteLine($"Provider   : {options.Provider}");
 Console.WriteLine($"Company    : {options.Company}");
 Console.WriteLine($"Output file: {options.OutputFile}");
+
+if (options != null)
+{
+    if (System.IO.File.Exists(options.InputFile))
+    {
+        string[] lines = System.IO.File.ReadAllLines(options.InputFile);
+        if (lines != null && lines.Length > 0)
+        {
+            var voc = DWIS.Vocabulary.Standard.VocabularyProvider.GetDWISVocabulary();
+            DWIS.Vocabulary.Development.DWISInstance dWISInstance = new("tool-kit", voc);
+            if (DWIS.Vocabulary.Utils.VocabularyParsing.FromLines(lines, voc, dWISInstance))
+            {
+                ManifestFile manifest = ManifestFile.FromDWISInstance(dWISInstance, options.Provider, options.Company);
+                if (manifest != null)
+                {
+                    var json = ManifestFile.ToJsonString(manifest);
+                    System.IO.File.WriteAllText(options.OutputFile, json);  
+                }
+                else
+                {
+                    Console.Error.WriteLine("Error: Manifest generation failed");
+                }
+            }
+            else
+            {
+                Console.Error.WriteLine("Error: Parsing failed");
+            }
+        }
+        else
+        {
+            Console.Error.WriteLine("Error: Input file is empty.");
+        }
+    }
+    else
+    {
+        Console.Error.WriteLine("Error: Input file does not exist.");
+    }
+}
+
+
+
 
 return 0;
 
