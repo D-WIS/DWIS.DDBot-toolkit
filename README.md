@@ -40,6 +40,20 @@ cp -R model-dwis-config /path/to/your-project/.agents/skills/
 Only `model-dwis-config/` is needed. You do not need to copy the rest of this repository or
 install its development environment.
 
+**Note for Claude code users**: the path is slightly different. Replace `.agents` by `.claude`:
+```text
+your-project/
+  .claude/
+    skills/
+      model-dwis-config/
+        SKILL.md
+        references/
+        assets/
+        scripts/
+```
+
+
+
 ## Use the Skill
 
 Open the target project in your agent, enter `/skills`, and select `model-dwis-config`.
