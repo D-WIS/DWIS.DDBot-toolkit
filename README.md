@@ -135,3 +135,18 @@ caches upstream Git objects under `.cache/`. `--check` works offline once the re
 is cached. Set `DDBOT_BENCHMARK_URL` to use a different upstream URL or a local checkout.
 Only validation code is mirrored. Review result-model changes against the toolkit's
 `services.py` adapter and run the tests after each sync.
+
+## Standalone modules
+
+Independent tools live under [`modules/`](modules/README.md), grouped by function with
+separate language implementations and dependencies.
+
+### Manifest converter
+
+[`modules/manifest-creation/python/`](modules/manifest-creation/python/README.md) converts DWIS CONFIG `.txt`
+files to manifest JSON using Python 3.11+ and the standard library. It is maintained outside
+`model-dwis-config` and requires no .NET runtime.
+
+```bash
+python modules/manifest-creation/python/manifest_creation.py input.txt Provider Company
+```

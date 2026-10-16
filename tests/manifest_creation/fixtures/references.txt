@@ -1,0 +1,10 @@
+# Reference ordering: ordinary sentences, class assertions, and implicit class references.
+DynamicDrillingSignal:signal
+WOB:point
+DataProvider:provider
+point HasDynamicValue signal
+signal BelongsToClass DrillingSignal
+point IsOfMeasurableQuantity ForceDrillingQuantity
+point IsProvidedBy provider
+point HasDynamicValue signal
+signal IsOfMeasurableQuantity ForceDrillingQuantity

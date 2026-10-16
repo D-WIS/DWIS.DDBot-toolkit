@@ -16,6 +16,7 @@ dev = ["pytest>=8.0", "ruff>=0.9"]
 [tool.pytest.ini_options]
 pythonpath = ["model-dwis-config/scripts"]
 testpaths = ["tests"]
+markers = ["reference: live comparison requiring an external runtime; enable with --run-reference"]
 
 [tool.ruff]
 line-length = 100

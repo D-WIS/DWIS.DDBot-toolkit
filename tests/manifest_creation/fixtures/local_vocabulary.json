@@ -1,0 +1,76 @@
+{
+  "ManifestName": null,
+  "Provider": {
+    "Name": "Provider",
+    "Company": "Company"
+  },
+  "InjectionInformation": {
+    "ServerName": null,
+    "EndPointURL": null,
+    "PublishingIntervalInMS": 0.0,
+    "InjectedVariablesNamespaceAlias": "Variables",
+    "InjectedNodesNamespaceAlias": "Nodes",
+    "ProvidedVariablesNamespaceAlias": "ProvidedVariables",
+    "InjectedVocabularyNamespaceAlias": "Vocabulary"
+  },
+  "InjectedVariables": [],
+  "InjectedNodes": [
+    {
+      "TypeDictionaryURI": "LocalPoint",
+      "BrowseName": null,
+      "UniqueName": "local",
+      "DisplayName": "local",
+      "Fields": null
+    }
+  ],
+  "InjectedReferences": [
+    {
+      "Subject": {
+        "NameSpace": "Nodes",
+        "ID": "local"
+      },
+      "VerbURI": "http://ddhub.no/BelongsToClass",
+      "Object": {
+        "NameSpace": "http://ddhub.no/",
+        "ID": "http://ddhub.no/LocalPoint"
+      }
+    }
+  ],
+  "ProvidedVariables": null,
+  "InjectedVocabulary": {
+    "Nouns": [
+      {
+        "Name": "LocalPoint",
+        "DisplayName": null,
+        "ParentNounName": "DWISNoun",
+        "NounAttributes": null,
+        "SpecializedNounAttributes": null,
+        "Description": null,
+        "Examples": null,
+        "DefinitionSetName": null,
+        "IsDeprecated": false,
+        "WillBeRemovedBy": "0001-01-01T00:00:00",
+        "WillBeRemovedFromVersion": null,
+        "ReplacedBy": null
+      }
+    ],
+    "Verbs": [
+      {
+        "Name": "LocalRelation",
+        "DisplayName": null,
+        "ParentVerbName": "DWISVerb",
+        "DomainNounName": null,
+        "RangeNounName": null,
+        "MinCardinality": -1,
+        "MaxCardinality": -1,
+        "Description": null,
+        "Examples": null,
+        "DefinitionSetName": null,
+        "IsDeprecated": false,
+        "WillBeRemovedBy": "0001-01-01T00:00:00",
+        "WillBeRemovedFromVersion": null,
+        "ReplacedBy": null
+      }
+    ]
+  }
+}

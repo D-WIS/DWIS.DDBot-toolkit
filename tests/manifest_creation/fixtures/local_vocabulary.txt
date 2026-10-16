@@ -1,0 +1,6 @@
+NOUN:LocalPoint
+LocalPoint.Parent = DWISNoun
+VERB:LocalRelation
+LocalRelation.Parent = DWISVerb
+LocalPoint:local
+local BelongsToClass LocalPoint

@@ -1,0 +1,99 @@
+{
+  "ManifestName": null,
+  "Provider": {
+    "Name": "Provider",
+    "Company": "Company"
+  },
+  "InjectionInformation": {
+    "ServerName": null,
+    "EndPointURL": null,
+    "PublishingIntervalInMS": 0.0,
+    "InjectedVariablesNamespaceAlias": "Variables",
+    "InjectedNodesNamespaceAlias": "Nodes",
+    "ProvidedVariablesNamespaceAlias": "ProvidedVariables",
+    "InjectedVocabularyNamespaceAlias": "Vocabulary"
+  },
+  "InjectedVariables": [
+    {
+      "NativeAddressSpaceNameSpace": null,
+      "NativeAddressSpaceNodeID": null,
+      "InjectedName": "signal",
+      "SamplingIntervalInMS": 0.0,
+      "Rank": 0,
+      "Dimensions": null,
+      "DataType": null
+    }
+  ],
+  "InjectedNodes": [
+    {
+      "TypeDictionaryURI": "DrillingSignal",
+      "BrowseName": null,
+      "UniqueName": "signal",
+      "DisplayName": "signal",
+      "Fields": [
+        {
+          "FieldName": "Value",
+          "FieldValue": "\"3.5\""
+        }
+      ]
+    },
+    {
+      "TypeDictionaryURI": "DataProvider",
+      "BrowseName": null,
+      "UniqueName": "provider",
+      "DisplayName": "provider",
+      "Fields": [
+        {
+          "FieldName": "ProviderName",
+          "FieldValue": "\"lower case\""
+        }
+      ]
+    },
+    {
+      "TypeDictionaryURI": "WitsMLTimeBasedLogEndPoint",
+      "BrowseName": null,
+      "UniqueName": "endpoint",
+      "DisplayName": "endpoint",
+      "Fields": [
+        {
+          "FieldName": "WellUID",
+          "FieldValue": null
+        },
+        {
+          "FieldName": "WellName",
+          "FieldValue": null
+        },
+        {
+          "FieldName": "WellboreUID",
+          "FieldValue": null
+        },
+        {
+          "FieldName": "WellboreName",
+          "FieldValue": null
+        },
+        {
+          "FieldName": "LogUID",
+          "FieldValue": null
+        },
+        {
+          "FieldName": "LogName",
+          "FieldValue": null
+        },
+        {
+          "FieldName": "Mnemonic",
+          "FieldValue": null
+        },
+        {
+          "FieldName": "EndPointDescription",
+          "FieldValue": "\"witsml\""
+        }
+      ]
+    }
+  ],
+  "InjectedReferences": [],
+  "ProvidedVariables": null,
+  "InjectedVocabulary": {
+    "Nouns": [],
+    "Verbs": []
+  }
+}

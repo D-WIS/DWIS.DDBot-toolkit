@@ -1,0 +1,12 @@
+# Dynamic and static signals, multi-typing, attributes, class references.
+DrillingSignal:signal
+DynamicDrillingSignal:signal
+WOB:point
+ContinuousDataType:point
+DataProvider:provider
+provider.ProviderName = "Example Company"
+point HasDynamicValue signal
+point IsOfMeasurableQuantity ForceDrillingQuantity
+signal BelongsToClass DrillingSignal
+point IsProvidedBy provider
+point HasDynamicValue signal

@@ -1,0 +1,126 @@
+{
+  "ManifestName": null,
+  "Provider": {
+    "Name": "Provider",
+    "Company": "Company"
+  },
+  "InjectionInformation": {
+    "ServerName": null,
+    "EndPointURL": null,
+    "PublishingIntervalInMS": 0.0,
+    "InjectedVariablesNamespaceAlias": "Variables",
+    "InjectedNodesNamespaceAlias": "Nodes",
+    "ProvidedVariablesNamespaceAlias": "ProvidedVariables",
+    "InjectedVocabularyNamespaceAlias": "Vocabulary"
+  },
+  "InjectedVariables": [
+    {
+      "NativeAddressSpaceNameSpace": null,
+      "NativeAddressSpaceNodeID": null,
+      "InjectedName": "signal",
+      "SamplingIntervalInMS": 0.0,
+      "Rank": 0,
+      "Dimensions": null,
+      "DataType": null
+    }
+  ],
+  "InjectedNodes": [
+    {
+      "TypeDictionaryURI": "WOB",
+      "BrowseName": null,
+      "UniqueName": "point",
+      "DisplayName": "point",
+      "Fields": [
+        {
+          "FieldName": "IsValid",
+          "FieldValue": null
+        }
+      ]
+    },
+    {
+      "TypeDictionaryURI": "DataProvider",
+      "BrowseName": null,
+      "UniqueName": "provider",
+      "DisplayName": "provider",
+      "Fields": [
+        {
+          "FieldName": "ProviderName",
+          "FieldValue": null
+        }
+      ]
+    }
+  ],
+  "InjectedReferences": [
+    {
+      "Subject": {
+        "NameSpace": "Nodes",
+        "ID": "point"
+      },
+      "VerbURI": "http://ddhub.no/HasDynamicValue",
+      "Object": {
+        "NameSpace": "Variables",
+        "ID": "signal"
+      }
+    },
+    {
+      "Subject": {
+        "NameSpace": "Nodes",
+        "ID": "point"
+      },
+      "VerbURI": "http://ddhub.no/IsProvidedBy",
+      "Object": {
+        "NameSpace": "Nodes",
+        "ID": "provider"
+      }
+    },
+    {
+      "Subject": {
+        "NameSpace": "Nodes",
+        "ID": "point"
+      },
+      "VerbURI": "http://ddhub.no/HasDynamicValue",
+      "Object": {
+        "NameSpace": "Variables",
+        "ID": "signal"
+      }
+    },
+    {
+      "Subject": {
+        "NameSpace": "Nodes",
+        "ID": "signal"
+      },
+      "VerbURI": "http://ddhub.no/BelongsToClass",
+      "Object": {
+        "NameSpace": "http://ddhub.no/",
+        "ID": "http://ddhub.no/DrillingSignal"
+      }
+    },
+    {
+      "Subject": {
+        "NameSpace": "Nodes",
+        "ID": "point"
+      },
+      "VerbURI": "http://ddhub.no/IsOfMeasurableQuantity",
+      "Object": {
+        "NameSpace": "http://ddhub.no/",
+        "ID": "http://ddhub.no/ForceDrillingQuantity"
+      }
+    },
+    {
+      "Subject": {
+        "NameSpace": "Nodes",
+        "ID": "signal"
+      },
+      "VerbURI": "http://ddhub.no/IsOfMeasurableQuantity",
+      "Object": {
+        "NameSpace": "http://ddhub.no/",
+        "ID": "http://ddhub.no/ForceDrillingQuantity"
+      }
+    }
+  ],
+  "ProvidedVariables": null,
+  "InjectedVocabulary": {
+    "Nouns": [],
+    "Verbs": []
+  }
+}

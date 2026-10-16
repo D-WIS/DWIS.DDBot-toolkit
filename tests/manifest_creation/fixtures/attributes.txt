@@ -1,0 +1,9 @@
+# Attribute assignment, attribute inheritance, and literal values.
+DrillingSignal:signal
+DynamicDrillingSignal:signal
+DataProvider:provider
+provider.ProviderName = "Example Company"
+signal.Value = "3.5"
+WitsMLTimeBasedLogEndPoint:endpoint
+endpoint.EndPointDescription = "witsml"
+provider.providername = "lower case"

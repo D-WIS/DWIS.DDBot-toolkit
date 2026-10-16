@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verification-only project. It sits outside the manifest-creation module, is not part of the
+    shipped console tool, and does not reference that module's source: it only pins the same
+    NuGet packages and exposes the DWIS library conversion path directly, so the Python port can
+    be checked against the exact upstream libraries.
+    See ../../../modules/manifest-creation/README.md#verification.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>reference_harness</RootNamespace>
+    <AssemblyName>reference-harness</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DWIS.API.DTO" Version="2.2.32" />
+    <PackageReference Include="DWIS.Vocabulary.Standard" Version="1.0.172" />
+    <PackageReference Include="DWIS.Vocabulary.Utils" Version="1.0.172" />
+    <PackageReference Include="DWIS.Vocabulary.Development" Version="1.0.172" />
+  </ItemGroup>
+
+</Project>

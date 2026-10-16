@@ -1,0 +1,1 @@
+"""Manifest conversion verification package."""
