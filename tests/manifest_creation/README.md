@@ -6,6 +6,7 @@ C# entry point remain under `modules/`.
 ```text
 manifest_creation/
   test_conversion.py     # Offline DTO, parsing, and fixture contracts
+  test_ontology.py       # TTL loading, union domains, inheritance, and relocated skill
   test_cli.py            # Offline Python command-line contract
   test_equivalence.py    # Live differential checks, marked reference
   test_verification.py   # Package alignment and reference failure handling
@@ -50,10 +51,11 @@ Offline checks compare all discovered fixture pairs and cover the Python CLI and
 input-handling fixes. An XML-based check requires the harness to pin every direct C# module
 package to the same version; it also runs before a live build.
 
-Live checks reproduce committed fixtures, compare a shared corpus, sweep all standard nouns
-and verbs, and compare the bundled vocabulary with the library's vocabulary projection.
-JSON comparisons ignore object-key order but preserve array order, repeated entries, null
-values, and string contents.
+Live checks reproduce committed fixtures, compare a shared corpus, sweep nouns and verbs shared with the pinned C# vocabulary, and check known TTL/library
+differences separately (`ComputedState` inheritance and `Réaumur` spelling). JSON comparisons
+ignore object-key order and `Fields` order, preserving other array order, repeated entries,
+null values, and string contents. TTL field order is independently tested as alphabetical
+within each class, followed by inherited fields.
 
 The oracle is the pinned DWIS libraries with initialized instance collections and
 `fromMD: false`. It is not the original console entry point: that entry point has documented
@@ -62,7 +64,7 @@ covered conversion cases, not equivalence on every possible input or identical C
 Python-specific improvements (strict errors, fences, and literal parsing) have separate
 behavior tests. See the [conversion notes](../../modules/manifest-creation/python/README.md).
 
-## Updating fixtures and vocabulary
+## Updating fixtures and vocabulary comparisons
 
 Use the reference harness to generate expected outputs; do not generate them with the Python
 implementation being tested. Review dependency updates and generated diffs together.
@@ -73,8 +75,10 @@ dotnet run --project tests/manifest_creation/harness -- \
   tests/manifest_creation/fixtures/example.json
 
 dotnet run --project tests/manifest_creation/harness -- \
-  vocabulary modules/manifest-creation/python/vocabulary.json
+  vocabulary /tmp/pinned-dwis-vocabulary.json
 ```
+
+The vocabulary export is for comparison only; Python reads the shared TTL directly.
 
 Every `.txt` fixture must have a matching `.json`, and vice versa. New pairs are discovered
 automatically. Run the full module verification after regenerating them.

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from .support import COMPANY, PROVIDER, manifest_creation, read_fixture, run_cli
+from .support import COMPANY, PROVIDER, manifest_creation, normalize_fields, read_fixture, run_cli
 
 
 @pytest.mark.parametrize("mode", ["positional", "named", "mixed"])
@@ -32,8 +32,8 @@ def test_cli_from_other_directory(tmp_path: Path, mode: str):
         args = [PROVIDER, "--input", str(source), COMPANY, "-o", str(target)]
     result = run_cli(*args, cwd=tmp_path)
     assert result.returncode == 0, result.stderr
-    assert json.loads(target.read_text(encoding="utf-8")) == json.loads(
-        read_fixture("example", "json")
+    assert normalize_fields(json.loads(target.read_text(encoding="utf-8"))) == normalize_fields(
+        json.loads(read_fixture("example", "json"))
     )
 
 
@@ -68,12 +68,17 @@ def test_cli_writes_indented_utf8_json_with_trailing_newline(tmp_path: Path):
     assert json.loads(text)["Provider"]["Name"] == "Ünïcode Æ"
 
 
-def test_cli_rejects_non_txt_input(tmp_path: Path):
-    source = tmp_path / "input.md"
-    source.write_text("WOB:point\n", encoding="utf-8")
+@pytest.mark.parametrize("suffix", [".dwis", ".txt", ".config", ".md", ""])
+def test_cli_accepts_config_regardless_of_extension(tmp_path: Path, suffix: str):
+    source = tmp_path / f"input{suffix}"
+    original = "# intent: final config\nWOB:point\n"
+    source.write_text(original, encoding="utf-8")
     result = run_cli(str(source), PROVIDER, COMPANY)
-    assert result.returncode != 0
-    assert ".txt" in result.stderr
+    assert result.returncode == 0, result.stderr
+    manifest = json.loads(source.with_suffix(".json").read_text(encoding="utf-8"))
+    assert manifest["InjectedNodes"][0]["TypeDictionaryURI"] == "WOB"
+    assert manifest["InjectedNodes"][0]["UniqueName"] == "point"
+    assert source.read_text(encoding="utf-8") == original
 
 
 def test_cli_reports_missing_input_file(tmp_path: Path):

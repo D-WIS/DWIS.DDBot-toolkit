@@ -1,38 +1,44 @@
 # Python manifest creation
 
-Standalone Python equivalent of `modules/manifest-creation/csharp`, using the DWIS DTO conversion
-rules and vocabulary versions pinned by that project. Requires Python 3.11 or newer;
-uses only the standard library. No .NET, pip packages, network connection, or Skill
-installation is needed to run it on Windows, Linux, or macOS.
+Python port of the DWIS DTO manifest conversion rules, using the shared
+`model-dwis-config/assets/DWISVocabulary.ttl` as the vocabulary authority.
+Requires Python 3.11+ and `rdflib>=7.1,<8`; no .NET runtime is needed.
+`uv run` installs the dependency declared in the script when necessary.
 
-Copy this whole directory when distributing the tool: `vocabulary.json` and the license
-files travel alongside `manifest_creation.py`. Paths to input/output files are relative
-to the caller's working directory; the vocabulary is loaded relative to the script.
+In this repository, the converter defaults to the shared skill asset. The copy bundled in
+`model-dwis-config/scripts/manifest-creation/` defaults to that skill's `assets/` directory,
+including when the skill directory is relocated or renamed. For a standalone distribution,
+ship the script, license files, and a Turtle ontology, then supply `--ontology <path.ttl>`.
+Input/output and explicit ontology paths are relative to the caller's working directory.
 
 ## Usage
 
 From the repository root:
 
 ```bash
-python modules/manifest-creation/python/manifest_creation.py input.txt Provider Company
-python modules/manifest-creation/python/manifest_creation.py input.txt Provider Company output.json
-python modules/manifest-creation/python/manifest_creation.py --input input.txt --provider Provider --company Company --output output.json
+uv run modules/manifest-creation/python/manifest_creation.py input.dwis Provider Company
+uv run modules/manifest-creation/python/manifest_creation.py input.dwis Provider Company output.json
+uv run modules/manifest-creation/python/manifest_creation.py --input input.dwis --provider Provider --company Company --output output.json
 ```
 
-On Windows, `py -3` can be used instead of `python`; on Linux/macOS, use `python3` if
-that is the available Python command.
+A provisioned Python environment with `rdflib` can run the script directly with `python`.
+Use `--ontology path/to/DWISVocabulary.ttl` to select an explicit ontology for either CLI or
+`create_manifest(..., ontology_path=...)` for the Python API. Missing or malformed ontologies
+cause an error; there is no fallback JSON vocabulary.
 
 The named options have short aliases `-i`, `-p`, `-c`, and `-o`. Positional arguments fill
 unset named options in input/provider/company/output order, as in the C# CLI. Quote
 paths or names containing spaces. `-h`, `--help`, and `/?` show help.
 
-The default output replaces the input's `.txt` extension with `.json`. Input is UTF-8
+Input extensions are unrestricted; `.dwis`, `.txt`, and extensionless CONFIG files are accepted.
+The default output replaces the input extension with `.json`, or appends `.json` when there is
+no extension. Input is UTF-8
 (with or without a BOM); output is indented UTF-8 JSON. Success exits with status 0;
 invalid input, argument errors, and read/write failures return a nonzero status.
 Parsing completes before opening the output file, so parsing errors preserve an existing
 output. An explicit output path can overwrite an existing file, but cannot be the input.
 
-Example `input.txt`:
+Example `input.dwis`:
 
 ```text
 DynamicDrillingSignal:wobSignal
@@ -86,17 +92,23 @@ when first attached to a local noun.
 
 ## Sources and verification
 
-The bundled `vocabulary.json` contains the 2692 nouns and 208 verbs from
-`DWIS.Vocabulary.Standard` **1.0.172**, extracted from
-`VocabularyProvider.GetDWISVocabulary()`. It retains only noun names, parent names,
-attribute definitions, and verb names needed by this converter; documentation is omitted.
-The vocabulary snapshot is independent of the ontology bundled in `model-dwis-config`.
+The shared Turtle ontology supplies named `owl:Class` nouns, `rdfs:subClassOf`
+inheritance, `owl:ObjectProperty` verbs, and `owl:DatatypeProperty` fields through
+`rdfs:domain`, including `owl:unionOf` domains. OWL restriction classes are excluded.
+Field names are sorted alphabetically within each class, followed by inherited fields;
+multiple parents are traversed in name order and duplicate fields are emitted once.
+RDF does not encode the C# attribute array order, so `Fields` order may differ.
+
+The Turtle vocabulary intentionally takes precedence over the C# library version 1.0.172:
+`ComputedState` inherits from `DrillingDataPoint` and has `IsValid`, and `Réaumur` uses its
+correct Unicode spelling rather than the library snapshot's `RÃ©aumur`. Updating the TTL
+updates both CONFIG modelling and Python manifest conversion without a second snapshot.
 
 Conversion sources:
 
 - [DWIS Vocabulary](https://github.com/D-WIS/DDHub-Semantic-Interoperability/tree/81a4245670dcfa189ce8406fe0f4a0ae27879987),
   `VocabularyParsing`, `TypedIndividual`, and `Noun.GetAllAttributes`, version 1.0.172.
-  The vocabulary and adapted logic are covered by `LICENSE-DWIS-Vocabulary` (Apache 2.0).
+  The adapted vocabulary parsing logic is covered by `LICENSE-DWIS-Vocabulary` (Apache 2.0).
 - [DWIS API DTO](https://github.com/D-WIS/DWIS-Blackboard-Base/tree/1bfdaf53faae0db638a59af10b6c3791f03092cc),
   `ManifestFile.FromDWISInstance` and DTO defaults, version 2.2.32.
   Adapted conversion logic is covered by `LICENSE-DWIS-DTO` (MIT, copyright 2025 D-WIS).
@@ -111,10 +123,10 @@ and only borrows the pinned packages; it initialized
 `VocabularyParsing.FromLines(lines, vocabulary, instance, fromMD: false)` followed by
 `ManifestFile.FromDWISInstance`. This isolates the intended library conversion from the
 entry-point issues above. JSON objects are compared structurally rather than by bytes.
-The bundled `vocabulary.json` is the harness's projection of
-`VocabularyProvider.GetDWISVocabulary()`, which `reference-harness vocabulary` regenerates
-and the test suite compares field by field. An additional development comparison instantiated
-every one of the 2692 standard nouns; that sweep is now part of the test suite.
+The reference harness can export its library vocabulary for comparison. Live tests compare
+shared vocabulary behavior and record the known TTL differences separately, including
+`ComputedState` and its descendants. Comparisons normalize `Fields` order while preserving
+other arrays and literal values. No JSON vocabulary snapshot is used at runtime.
 
 Run the regression tests from the repository root:
 

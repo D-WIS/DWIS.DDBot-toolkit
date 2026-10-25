@@ -4,7 +4,15 @@ import json
 
 import pytest
 
-from .support import COMPANY, FIXTURE_NAMES, FIXTURES, PROVIDER, create, read_fixture
+from .support import (
+    COMPANY,
+    FIXTURE_NAMES,
+    FIXTURES,
+    PROVIDER,
+    create,
+    normalize_fields,
+    read_fixture,
+)
 
 
 def test_fixtures_are_complete_pairs():
@@ -15,7 +23,7 @@ def test_fixtures_are_complete_pairs():
 @pytest.mark.parametrize("name", FIXTURE_NAMES)
 def test_matches_pinned_dotnet_fixture(name: str):
     expected = json.loads(read_fixture(name, "json"))
-    assert create(read_fixture(name, "txt")) == expected
+    assert normalize_fields(create(read_fixture(name, "txt"))) == normalize_fields(expected)
 
 
 def test_repeated_references_and_field_assignments_are_kept():
@@ -103,13 +111,13 @@ def test_fields_follow_declared_then_inherited_attributes():
     """WitsMLTimeBasedLogEndPoint defines attributes and inherits one from DataEndPoint."""
     fields = create("WitsMLTimeBasedLogEndPoint:endpoint\n")["InjectedNodes"][0]["Fields"]
     assert [field["FieldName"] for field in fields] == [
-        "WellUID",
-        "WellName",
-        "WellboreUID",
-        "WellboreName",
-        "LogUID",
         "LogName",
+        "LogUID",
         "Mnemonic",
+        "WellName",
+        "WellUID",
+        "WellboreName",
+        "WellboreUID",
         "EndPointDescription",
     ]
 
@@ -374,7 +382,9 @@ def test_input_decorations_match_plain_config_output():
     lines = [line for line in plain.splitlines() if not line.startswith("#")]
     decorated = "\ufeff# intent: example\n```dwis\n"
     decorated += "\n".join("- " + line + ";" for line in lines if line) + "\n```"
-    assert create(decorated) == json.loads(read_fixture("example", "json"))
+    assert normalize_fields(create(decorated)) == normalize_fields(
+        json.loads(read_fixture("example", "json"))
+    )
 
 
 @pytest.mark.parametrize("opening", ["```dwis", "```config", "```text", "```", "```DWIS"])

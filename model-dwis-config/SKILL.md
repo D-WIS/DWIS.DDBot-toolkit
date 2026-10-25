@@ -14,6 +14,7 @@ collect or extract user inputs
   → validate and repair the draft
   → annotate the validated CONFIG with the intent sketch
   → deliver the final DWIS CONFIG
+  → offer optional manifest conversion in the same response (interactive only)
 ```
 
 Keep conversation, decisions, and file edits in the calling agent. Use DDBot Toolkit for ontology
@@ -229,3 +230,35 @@ requesting input.
 
 Invoke the derived `<script-path>` rather than assuming that a global `ddbot` command or separately
 installed Python package exists.
+
+## 6. Offer optional manifest conversion
+
+In interactive mode, after returning the final CONFIG, ask in the **same message** whether the user
+wants to convert it to a manifest, for example: "Do you need to convert this DWIS CONFIG to manifest JSON? If so, reply 'Yes, convert it; company: [company name]; provider: [provider name]'."
+Keep this question in the response text; do not insert it or any manifest content into the CONFIG
+file. Do not run the converter or create a manifest unless the user explicitly requests conversion.
+If conversion was already explicitly requested, proceed without asking for the same permission again.
+
+In non-interactive mode, omit the follow-up question and generate a manifest only when the calling
+prompt explicitly requests it.
+
+When conversion is requested:
+
+1. Reuse the final validated, annotated CONFIG as input without modifying it. Obtain the required
+   provider and company names from the user or existing context; do not invent them. In
+   non-interactive mode, report missing required metadata without blocking CONFIG delivery.
+2. Derive `<manifest-script-path>` as `<skill-root>/scripts/manifest-creation/manifest_creation.py`.
+   Reuse `<ontology-path>` as the vocabulary source; there is no separate JSON vocabulary. Confirm
+   the script, ontology, input, and separate JSON output resolve within `<cwd>` using the existing
+   path-boundary rules. The converter uses `rdflib`, already required by the toolkit, and its inline
+   metadata declares that dependency. Keep using the preflight-selected `UV_CACHE_DIR`.
+3. Pass the final CONFIG directly to the converter; the input extension is unrestricted, including
+   `.dwis`. Run with an explicit ontology and an output path distinct from the CONFIG and ontology:
+
+   ```bash
+   uv run <manifest-script-path> --ontology <ontology-path> --input <config-path> \
+     --provider "<provider>" --company "<company>" --output <manifest-json-path>
+   ```
+
+4. Return the manifest JSON path on success. If conversion fails, report the error and preserve the
+   validated CONFIG; do not change its semantics merely to satisfy the converter.

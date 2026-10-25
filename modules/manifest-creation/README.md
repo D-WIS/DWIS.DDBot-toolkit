@@ -1,12 +1,12 @@
 # Manifest creation
 
-Convert DWIS CONFIG `.txt` files into manifest JSON, with provider and company metadata.
+Convert DWIS CONFIG files into manifest JSON, with provider and company metadata.
 The two implementations live together here so their CLI and output contract can be
 maintained as one module.
 
 | Implementation | Requirements | Details |
 | --- | --- | --- |
-| [Python](python/README.md) | Python 3.11+, standard library only | Standalone distribution with a bundled vocabulary snapshot |
+| [Python](python/README.md) | Python 3.11+, rdflib | Uses the shared skill Turtle ontology |
 | [C#](csharp/README.md) | .NET 8 SDK to build; runtime needed for framework-dependent deployment | Original implementation using DWIS NuGet packages |
 
 ## Python usage
@@ -14,14 +14,16 @@ maintained as one module.
 From the repository root:
 
 ```bash
-python modules/manifest-creation/python/manifest_creation.py input.txt Provider Company
+uv run modules/manifest-creation/python/manifest_creation.py input.dwis Provider Company
 ```
 
-Both CLIs accept `input.txt provider company [output.json]` or the named arguments
+Both CLIs accept `input provider company [output.json]` or the named arguments
 `--input`, `--provider`, `--company`, and `--output`. The default output changes the input
-extension to `.json`.
+extension to `.json`. Python accepts any input extension, including `.dwis`, and extensionless
+files; the original C# CLI requires `.txt`.
 
-The intended conversion uses `DWIS.API.DTO` 2.2.32 and vocabulary 1.0.172. The Python
+The manifest DTO defaults follow `DWIS.API.DTO` 2.2.32. Python reads vocabulary from
+`model-dwis-config/assets/DWISVocabulary.ttl`; C# uses vocabulary 1.0.172 from NuGet. The Python
 implementation includes input-handling fixes for the original C# entry point; the
 [Python README](python/README.md#intentional-input-handling-fixes) describes those
 differences. The C# source retains its original behavior.
@@ -46,8 +48,9 @@ uv run pytest -q tests/manifest_creation
    [`tests/manifest_creation/harness`](../../tests/manifest_creation/harness), a
    verification-only project outside this module, pinned to the same NuGet versions as the C#
    implementation, and compare its output with the Python output over a conversion corpus and
-   over sweeps that use every noun and verb in the bundled vocabulary. They are skipped by
-   default. Add `--run-reference` to enable them; missing SDKs, restore/build failures,
+   over sweeps of the shared nouns and verbs. Known TTL/library differences are checked separately;
+   field comparisons ignore `Fields` order because RDF does not specify attribute array order.
+   They are skipped by default. Add `--run-reference` to enable them; missing SDKs, restore/build failures,
    timeouts, and conversion failures then fail the suite. The existing environment variable
    `MANIFEST_CREATION_REFERENCE=require` also enables this strict mode.
 
@@ -61,18 +64,16 @@ The offline checks also enforce matching package versions in the C# module and h
 See the [verification guide](../../tests/manifest_creation/README.md) for the test layout
 and runtime requirements.
 
-Regenerate a fixture or the vocabulary snapshot after a package or vocabulary change:
+Regenerate a C# reference fixture after a package change:
 
 ```bash
 dotnet run --project tests/manifest_creation/harness -- \
   manifest tests/manifest_creation/fixtures/<name>.txt Provider Company \
   tests/manifest_creation/fixtures/<name>.json
-dotnet run --project tests/manifest_creation/harness -- \
-  vocabulary modules/manifest-creation/python/vocabulary.json
 ```
 
-The vocabulary dump is field-for-field identical to `python/vocabulary.json`, so that command
-regenerates the bundled snapshot; the test suite asserts the equality.
+Python reads the shared TTL directly. The harness can export the pinned C# vocabulary with
+`vocabulary <output.json>` for comparison; that export is not a Python runtime resource.
 
 ## Conversion prompt
 
@@ -82,9 +83,8 @@ current test layout and execution policy. It can be reused as a template for ano
 ```text
 Convert the C# manifest-creation console tool in modules/manifest-creation/csharp into a
 standalone Python 3.11+ module under modules/manifest-creation/python. The Python module must
-produce the manifest JSON of the C# conversion for the same CONFIG input, using only the
-standard library: no .NET, no third-party packages, no network access, and no installation,
-on Windows, Linux, and macOS.
+preserve the C# manifest DTO shape while using rdflib to read the shared Turtle ontology.
+No .NET runtime is required. Use uv inline dependency metadata for Python 3.11+ and rdflib.
 
 Source of truth
 - Pin DWIS.API.DTO 2.2.32, DWIS.Vocabulary.Standard 1.0.172, and DWIS.Vocabulary.Utils
@@ -92,16 +92,16 @@ Source of truth
 - Reimplement the conversion path VocabularyParsing.FromLines with ordinary CONFIG parsing
   (not the Markdown default) and ManifestFile.FromDWISInstance, including the DTO defaults
   they emit: ManifestName, ProvidedVariables, server settings, and namespace aliases.
-- Extract the vocabulary from VocabularyProvider.GetDWISVocabulary() into a bundled
-  python/vocabulary.json: noun names, parent names, attribute definitions (type, name,
-  display name, description), and verb names. Ship the Apache 2.0 vocabulary license and the
-  MIT DTO license next to the Python script and attribute both sources in the README.
+- Use model-dwis-config/assets/DWISVocabulary.ttl for classes, inheritance, object properties,
+  and datatype-property domains (including unionOf). Exclude OWL restriction classes; use
+  deterministic alphabetical field order and deduplicate inherited fields. Provide --ontology
+  for an explicit TTL path. Ship the Apache 2.0 parsing-logic license and MIT DTO license.
 
-CLI contract (mirror the C# CommandLineOptions)
-- Usage: input.txt provider company [output.json], or --input/--provider/--company/--output
+CLI contract (retain C# argument conventions, without its input suffix restriction)
+- Usage: input.dwis provider company [output.json], or --input/--provider/--company/--output
   with the short aliases -i/-p/-c/-o. Positional arguments fill unset named options in
   input/provider/company/output order. -h, --help, and /? print help.
-- Require a .txt input and non-blank provider and company. The default output is the input
+- Accept any input extension and require non-blank provider and company. The default output is the input
   path with a .json extension. Print the four-line summary the C# tool prints, with labels
   "Input file : ", "Provider   : ", "Company    : ", and "Output file: ".
 - Exit 0 on success and report failures on stderr with a nonzero status.
@@ -143,12 +143,12 @@ Verification (do not skip it)
   collections, FromLines with fromMD: false, then ManifestFile.FromDWISInstance) and
   "vocabulary <output.json>" (the snapshot dump). Use it in opt-in differential tests over a
   conversion corpus and over sweeps that declare every noun, assign every attribute, and use
-  every verb, comparing the two implementations. Mark them reference and skip by default;
+  every verb, comparing the shared vocabulary and explicitly recording TTL/library differences. Mark them reference and skip by default;
   --run-reference (or MANIFEST_CREATION_REFERENCE=require) enables strict execution, where
   missing SDKs, restore/build errors, timeouts, and conversion failures fail the suite.
 - Add an offline check that the harness pins every direct package dependency of the C# module
   to the same version. Include stdout and stderr in process failures and bound execution time.
 - Document the shared contract, the intentional differences from the C# entry point, and the
   upstream sources and licenses in modules/manifest-creation/README.md, python/README.md, and
-  csharp/README.md, including the commands that regenerate fixtures and the vocabulary.
+  csharp/README.md, including commands to regenerate fixtures and inspect the C# vocabulary.
 ```

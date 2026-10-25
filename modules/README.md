@@ -1,7 +1,8 @@
 # Standalone modules
 
 Group tools by function, then by implementation language. These modules are maintained
-outside the installable `model-dwis-config` Skill.
+outside the installable `model-dwis-config` Skill. The manifest converter is also bundled
+with the skill and reads its shared `assets/DWISVocabulary.ttl` ontology.
 
 ```text
 modules/
@@ -10,7 +11,6 @@ modules/
     python/
       README.md
       manifest_creation.py
-      vocabulary.json
       LICENSE-DWIS-*
     csharp/
       README.md
@@ -33,8 +33,8 @@ modules/
   contract, and behavior differences. Put language-specific setup and commands in the
   implementation's README.
 - Keep dependencies with their implementation. C# projects declare NuGet dependencies in
-  `.csproj`; Python modules that need third-party packages should get their own
-  `pyproject.toml`. A standard-library-only script needs no package manifest.
+  `.csproj`; Python modules that need third-party packages declare them in their own
+  `pyproject.toml` or inline dependency metadata for a single-file script.
 - A small C# module can keep its `.csproj` and sources directly in `csharp/`. When it grows
   into multiple projects, use `csharp/src/<Project>/` and `csharp/tests/<Project>.Tests/`,
   with a module-local solution. Do not couple unrelated modules through a shared solution

@@ -107,6 +107,7 @@ model-dwis-config/                 complete installable Skill
   assets/                          ontology and example corpus
   scripts/ddbot.py                 CLI entry point
   scripts/ddbot_toolkit/           Python implementation
+  scripts/manifest-creation/       optional converter using the shared TTL ontology
 docs/                              design and maintenance documentation
 tests/                             capability tests
 scripts/                           repository maintenance scripts
@@ -143,10 +144,15 @@ separate language implementations and dependencies.
 
 ### Manifest converter
 
-[`modules/manifest-creation/python/`](modules/manifest-creation/python/README.md) converts DWIS CONFIG `.txt`
-files to manifest JSON using Python 3.11+ and the standard library. It is maintained outside
-`model-dwis-config` and requires no .NET runtime.
+[`modules/manifest-creation/python/`](modules/manifest-creation/python/README.md) converts DWIS CONFIG
+files regardless of their extension (including `.dwis`) to manifest JSON using Python 3.11+ and `rdflib`, with the shared
+`model-dwis-config/assets/DWISVocabulary.ttl` as the vocabulary source.
+The skill bundles a copy in `model-dwis-config/scripts/manifest-creation/` and offers conversion
+after delivering the final CONFIG. Conversion runs only when explicitly requested and writes a
+separate JSON file, preserving the CONFIG. Keep the bundled script and licenses in sync with
+the standalone Python module; the bundled README documents skill usage, while the module README
+contains standalone usage and development details.
 
 ```bash
-python modules/manifest-creation/python/manifest_creation.py input.txt Provider Company
+uv run modules/manifest-creation/python/manifest_creation.py input.dwis Provider Company
 ```

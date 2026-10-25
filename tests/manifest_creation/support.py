@@ -18,7 +18,6 @@ SCRIPT = MODULE_DIR / "manifest_creation.py"
 FIXTURES = Path(__file__).with_name("fixtures")
 HARNESS_PROJECT = Path(__file__).with_name("harness") / "reference-harness.csproj"
 CSHARP_PROJECT = ROOT / "modules/manifest-creation/csharp/manifest-creation.csproj"
-VOCABULARY = json.loads((MODULE_DIR / "vocabulary.json").read_text(encoding="utf-8"))
 PROVIDER = "Provider"
 COMPANY = "Company"
 
@@ -27,6 +26,21 @@ FIXTURE_NAMES = sorted(path.stem for path in FIXTURES.glob("*.txt"))
 SPEC = importlib.util.spec_from_file_location("manifest_creation_tool", SCRIPT)
 manifest_creation = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(manifest_creation)
+VOCABULARY = manifest_creation.load_vocabulary()
+
+
+def normalize_fields(value):
+    """Compare field membership and values independently of the RDF field order."""
+    if isinstance(value, dict):
+        return {
+            key: sorted(item, key=lambda field: field["FieldName"])
+            if key == "Fields" and isinstance(item, list)
+            else normalize_fields(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [normalize_fields(item) for item in value]
+    return value
 
 
 def create(text: str, provider: str = PROVIDER, company: str = COMPANY) -> dict:

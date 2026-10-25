@@ -5,9 +5,33 @@ from pathlib import Path
 
 import pytest
 
-from .support import FIXTURE_NAMES, VOCABULARY, create, read_fixture, run_checked, run_reference
+from .support import (
+    FIXTURE_NAMES,
+    VOCABULARY,
+    create,
+    normalize_fields,
+    read_fixture,
+    run_checked,
+    run_reference,
+)
 
 pytestmark = pytest.mark.reference
+
+# TTL changes ComputedState inheritance, including fields on its descendants.
+TTL_STATE_CLASSES = {
+    "ComputedState",
+    "PhysicalState",
+    "ProceduralState",
+    "ActivationState",
+    "EnablementState",
+    "IdlingState",
+    "ProcessState",
+}
+SHARED_NOUNS = {
+    name: noun
+    for name, noun in VOCABULARY["Nouns"].items()
+    if name not in TTL_STATE_CLASSES | {"Réaumur"}
+}
 
 
 CONVERSION_CORPUS = {
@@ -47,17 +71,17 @@ def test_reference_harness_agrees_with_python(reference_harness: Path, tmp_path:
     text = CONVERSION_CORPUS[name]
     expected = run_reference(reference_harness, text, tmp_path)
     assert expected["InjectedNodes"] or expected["InjectedVariables"], "empty reference manifest"
-    assert create(text) == expected
+    assert normalize_fields(create(text)) == normalize_fields(expected)
 
 
 def _sweep_declarations() -> str:
-    return "\n".join(f"{noun}:ind_{index}" for index, noun in enumerate(VOCABULARY["Nouns"])) + "\n"
+    return "\n".join(f"{noun}:ind_{index}" for index, noun in enumerate(SHARED_NOUNS)) + "\n"
 
 
 def _sweep_attributes() -> str:
     lines: list[str] = []
     index = 0
-    for noun in VOCABULARY["Nouns"].values():
+    for noun in SHARED_NOUNS.values():
         if not noun["NounAttributes"]:
             continue
         lines.append(f"{noun['Name']}:ind_{index}")
@@ -69,7 +93,7 @@ def _sweep_attributes() -> str:
 
 def _sweep_class_assertions() -> str:
     lines: list[str] = []
-    for index, noun in enumerate(VOCABULARY["Nouns"]):
+    for index, noun in enumerate(SHARED_NOUNS):
         lines.append(f"{noun}:ind_{index}")
         lines.append(f"ind_{index} BelongsToClass {noun}")
     return "\n".join(lines) + "\n"
@@ -77,7 +101,7 @@ def _sweep_class_assertions() -> str:
 
 def _sweep_implicit_references() -> str:
     lines = ["WOB:subject"]
-    lines += [f"subject IsOfMeasurableQuantity {noun}" for noun in VOCABULARY["Nouns"]]
+    lines += [f"subject IsOfMeasurableQuantity {noun}" for noun in SHARED_NOUNS]
     return "\n".join(lines) + "\n"
 
 
@@ -95,7 +119,7 @@ def _sweep_verbs(implicit: bool) -> str:
 def _sweep_variable_subjects() -> str:
     lines = _sweep_declarations().splitlines()
     lines.append("DynamicDrillingSignal:var")
-    lines += [f"var IsOfMeasurableQuantity {noun}" for noun in VOCABULARY["Nouns"]]
+    lines += [f"var IsOfMeasurableQuantity {noun}" for noun in SHARED_NOUNS]
     return "\n".join(lines) + "\n"
 
 
@@ -119,8 +143,8 @@ def test_reference_harness_agrees_across_the_vocabulary(
     expected = run_reference(reference_harness, text, tmp_path)
     actual = create(text)
 
-    nouns, verbs = len(VOCABULARY["Nouns"]), len(VOCABULARY["Verbs"])
-    with_attributes = sum(1 for noun in VOCABULARY["Nouns"].values() if noun["NounAttributes"])
+    nouns, verbs = len(SHARED_NOUNS), len(VOCABULARY["Verbs"])
+    with_attributes = sum(1 for noun in SHARED_NOUNS.values() if noun["NounAttributes"])
     expected_counts = {
         "declarations": (nouns, 0),
         "attributes": (with_attributes, 0),
@@ -132,10 +156,38 @@ def test_reference_harness_agrees_across_the_vocabulary(
     }[name]
     assert len(expected["InjectedNodes"]) + len(expected["InjectedVariables"]) == expected_counts[0]
     assert len(expected["InjectedReferences"]) == expected_counts[1]
-    assert actual == expected
+    assert normalize_fields(actual) == normalize_fields(expected)
 
 
-def test_bundled_vocabulary_matches_the_pinned_library(reference_harness: Path, tmp_path: Path):
+def test_ttl_vocabulary_differences_from_the_pinned_library(
+    reference_harness: Path, tmp_path: Path
+):
     target = tmp_path / "pinned-vocabulary.json"
     run_checked(["dotnet", str(reference_harness), "vocabulary", str(target)])
-    assert VOCABULARY == json.loads(target.read_text(encoding="utf-8"))
+    pinned = json.loads(target.read_text(encoding="utf-8"))
+    assert set(VOCABULARY["Verbs"]) == set(pinned["Verbs"])
+    assert set(VOCABULARY["Nouns"]) - set(pinned["Nouns"]) == {"Réaumur"}
+    assert set(pinned["Nouns"]) - set(VOCABULARY["Nouns"]) == {"RÃ©aumur"}
+    for name, noun in VOCABULARY["Nouns"].items():
+        if name == "Réaumur":
+            continue
+        original = pinned["Nouns"][name]
+        assert {a["Name"] for a in noun["NounAttributes"]} == {
+            a["Name"] for a in original["NounAttributes"] or []
+        }
+        parents = [original["ParentNounName"]] if original["ParentNounName"] else []
+        if name == "ComputedState":
+            assert noun["ParentNounNames"] == ["DrillingDataPoint"]
+            assert parents == ["ComputationUnit"]
+        else:
+            assert noun["ParentNounNames"] == parents
+
+
+@pytest.mark.parametrize("noun", sorted(TTL_STATE_CLASSES))
+def test_ttl_state_fields_intentionally_differ_from_csharp(reference_harness, tmp_path, noun):
+    text = f"{noun}:state\n"
+    expected = run_reference(reference_harness, text, tmp_path)
+    actual = create(text)
+    assert expected["InjectedNodes"][0]["Fields"] is None
+    expected["InjectedNodes"][0]["Fields"] = [{"FieldName": "IsValid", "FieldValue": None}]
+    assert actual == expected

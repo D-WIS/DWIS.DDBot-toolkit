@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Create DWIS manifests using only the Python standard library.
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["rdflib>=7.1,<8"]
+# ///
+"""Create DWIS manifests using the shared DWIS Turtle ontology.
 
 Port of DWIS VocabularyParsing / ManifestFile.FromDWISInstance; see README.md
 for intentional input-handling fixes and upstream attribution.
@@ -13,8 +17,73 @@ from pathlib import Path
 import re
 import sys
 
+from rdflib import Graph, OWL, RDF, RDFS, URIRef
+from rdflib.collection import Collection
+from rdflib.exceptions import ParserError
+
 URI = "http://ddhub.no/"
-VOCABULARY = Path(__file__).with_name("vocabulary.json")
+
+
+def default_ontology_path() -> Path:
+    """Resolve the shared asset in the skill bundle or the repository layout."""
+    root = Path(__file__).resolve().parents[2]
+    bundled = root / "assets" / "DWISVocabulary.ttl"
+    if bundled.is_file():
+        return bundled
+    return root.parent / "model-dwis-config" / "assets" / "DWISVocabulary.ttl"
+
+
+def load_vocabulary(ontology_path: str | Path | None = None) -> dict:
+    """Project named classes, object properties, and field domains from Turtle.
+
+    OWL restriction classes describe constraints rather than instantiable nouns.
+    Field order is alphabetical within each class because RDF defines no such order.
+    """
+    path = Path(ontology_path) if ontology_path is not None else default_ontology_path()
+    graph = Graph()
+    try:
+        graph.parse(path, format="turtle")
+    except (ParserError, SyntaxError) as error:
+        raise ValueError(f"Invalid Turtle ontology {path}: {error}") from error
+
+    def is_named(term):
+        return isinstance(term, URIRef) and str(term).startswith(URI)
+
+    nouns = {}
+    for term in sorted(set(graph.subjects(RDF.type, OWL.Class)), key=str):
+        if not is_named(term) or (term, RDF.type, OWL.Restriction) in graph:
+            continue
+        name = str(term).removeprefix(URI)
+        nouns[name] = {
+            "Name": name,
+            "ParentNounNames": sorted(
+                str(parent).removeprefix(URI)
+                for parent in graph.objects(term, RDFS.subClassOf)
+                if is_named(parent)
+            ),
+            "NounAttributes": [],
+        }
+    if not nouns:
+        raise ValueError(f"Ontology {path} contains no named DWIS classes.")
+
+    for prop in sorted(set(graph.subjects(RDF.type, OWL.DatatypeProperty)), key=str):
+        if not is_named(prop):
+            continue
+        domains = set()
+        for domain in graph.objects(prop, RDFS.domain):
+            union = graph.value(domain, OWL.unionOf)
+            domains.update(Collection(graph, union) if union is not None else [domain])
+        for domain in domains:
+            name = str(domain).removeprefix(URI)
+            if name in nouns:
+                nouns[name]["NounAttributes"].append({"Name": str(prop).removeprefix(URI)})
+
+    verbs = sorted(
+        str(term).removeprefix(URI)
+        for term in set(graph.subjects(RDF.type, OWL.ObjectProperty))
+        if is_named(term)
+    )
+    return {"Nouns": nouns, "Verbs": verbs}
 
 
 def _definition(name: str, kind: str) -> dict:
@@ -38,7 +107,9 @@ def _definition(name: str, kind: str) -> dict:
     return result
 
 
-def create_manifest(text: str, provider: str, company: str) -> dict:
+def create_manifest(
+    text: str, provider: str, company: str, *, ontology_path: str | Path | None = None
+) -> dict:
     """Convert CONFIG text to a JSON-compatible manifest; raise ValueError on bad input.
 
     Declarations and attributes are processed in source order, like the C# parser.
@@ -46,7 +117,7 @@ def create_manifest(text: str, provider: str, company: str) -> dict:
     """
     if not provider.strip() or not company.strip():
         raise ValueError("Provider and company must not be empty.")
-    vocabulary = json.loads(VOCABULARY.read_text(encoding="utf-8"))
+    vocabulary = load_vocabulary(ontology_path)
     nouns = vocabulary["Nouns"]
     verbs = set(vocabulary["Verbs"])
     local = {"Nouns": [], "Verbs": []}
@@ -56,17 +127,29 @@ def create_manifest(text: str, provider: str, company: str) -> dict:
     meaningful = 0
 
     def fields_for(noun):
-        fields, visited = [], set()
-        while noun is not None:
-            if noun["Name"] in visited:
+        fields, active, visited, field_names = [], set(), set(), set()
+
+        def visit(noun):
+            if noun is None:
+                return
+            name = noun["Name"]
+            if name in active:
                 raise ValueError("Cyclic noun inheritance.")
-            visited.add(noun["Name"])
-            fields.extend(
-                {"FieldName": a["Name"], "FieldValue": None}
-                for a in noun.get("NounAttributes") or []
-            )
+            if name in visited:
+                return
+            active.add(name)
+            for attribute in noun.get("NounAttributes") or []:
+                if attribute["Name"] not in field_names:
+                    fields.append({"FieldName": attribute["Name"], "FieldValue": None})
+                    field_names.add(attribute["Name"])
             # Upstream resolves inherited attributes against the standard vocabulary only.
-            noun = nouns.get(noun.get("ParentNounName"))
+            parents = noun.get("ParentNounNames", [noun.get("ParentNounName")])
+            for parent in parents:
+                visit(nouns.get(parent))
+            active.remove(name)
+            visited.add(name)
+
+        visit(noun)
         return fields or None
 
     for number, raw in enumerate(text.lstrip("\ufeff").splitlines(), 1):
@@ -238,10 +321,13 @@ def main(argv=None) -> int:
     for short, name in (("i", "input"), ("p", "provider"), ("c", "company"), ("o", "output")):
         parser.add_argument(f"-{short}", f"--{name}")
     parser.add_argument(
+        "--ontology", help="DWIS Turtle ontology; defaults to the shared skill asset"
+    )
+    parser.add_argument(
         "positional",
         nargs="*",
         metavar="ARG",
-        help="input.txt provider company [output.json]; fills unset named options",
+        help="input.dwis provider company [output.json]; fills unset named options",
     )
     args = list(sys.argv[1:] if argv is None else argv)
     if "/?" in args:
@@ -259,8 +345,6 @@ def main(argv=None) -> int:
             if not values[key] or not values[key].strip():
                 raise ValueError(f"The {key} argument is required.")
         source = Path(values["input"]).resolve()
-        if source.suffix.lower() != ".txt":
-            raise ValueError("The input file must be a .txt file.")
         target = (
             Path(values["output"]).resolve()
             if values["output"] and values["output"].strip()
@@ -268,8 +352,14 @@ def main(argv=None) -> int:
         )
         if source == target or (target.exists() and source.samefile(target)):
             raise ValueError("Output must differ from input.")
+        ontology = Path(options.ontology) if options.ontology else default_ontology_path()
+        if target == ontology.resolve() or (target.exists() and target.samefile(ontology)):
+            raise ValueError("Output must differ from the ontology.")
         manifest = create_manifest(
-            source.read_text(encoding="utf-8-sig"), values["provider"], values["company"]
+            source.read_text(encoding="utf-8-sig"),
+            values["provider"],
+            values["company"],
+            ontology_path=ontology,
         )
         target.write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
